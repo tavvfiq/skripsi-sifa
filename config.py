@@ -3,7 +3,7 @@ import os
 epochs = 24
 time = 8
 n_classes = 2
-width,height,color_channels = 210,140,1
+width,height,color_channels = 210,140,3
 number_of_hiddenunits = 32
 batch_size = 16
 
@@ -12,8 +12,8 @@ mode = 'test_video'
 
 #config
 base_folder = os.path.abspath(os.curdir)
-data_path = os.path.join(base_folder,r'/mnt/d/Skripsi_Sifa/SourceCode/datasets_2')
-dataset_path = os.path.join(base_folder,r'/mnt/d/Skripsi_Sifa/SourceCode/datasets')
+data_path = os.path.join(base_folder,r'/mnt/d/Skripsi_Sifa/SourceCode/datasets_2') #edit this
+dataset_path = os.path.join(base_folder,r'/mnt/d/Skripsi_Sifa/SourceCode/datasets') #edit this
 train_folder = os.path.join(data_path, 'train_set')
 train2_folder = os.path.join(dataset_path, 'train_set')
 test_folder = os.path.join(data_path,'test_set')

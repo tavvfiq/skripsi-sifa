@@ -7,8 +7,8 @@ import json
 import shutil
 from collections import deque
 from model_architecture import build_tools
-from utils import *
-from config import *
+import utils
+import config as conf
 import gpu
 
 os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
@@ -19,24 +19,24 @@ tf.random.set_seed(0)
 random.seed(0)
 np.random.seed(0)
 
-gpu.set_memory_limit(11*1024)
+gpu.set_memory_limit(11*1024) #change this
 
-if mode == "train":
-    if not os.path.exists(model_save_folder):
-        os.makedirs(model_save_folder)
+if conf.mode == "train":
+    if not os.path.exists(conf.model_save_folder):
+        os.makedirs(conf.model_save_folder)
     else:
-        shutil.rmtree(model_save_folder)
-        os.makedirs(model_save_folder)
+        shutil.rmtree(conf.model_save_folder)
+        os.makedirs(conf.model_save_folder)
 
-    if not os.path.exists(tensorboard_save_folder):
-        os.makedirs(tensorboard_save_folder)
+    if not os.path.exists(conf.tensorboard_save_folder):
+        os.makedirs(conf.tensorboard_save_folder)
     else:
-        shutil.rmtree(tensorboard_save_folder)
-        os.makedirs(tensorboard_save_folder)
+        shutil.rmtree(conf.tensorboard_save_folder)
+        os.makedirs(conf.tensorboard_save_folder)
 
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath=checkpoint_path,
+    filepath=conf.checkpoint_path,
     verbose=1,
     save_weights_only=True,
     save_freq="epoch",
@@ -44,7 +44,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(
 )
 
 tensorboard_callback = tf.keras.callbacks.TensorBoard(
-    log_dir=tensorboard_save_folder,
+    log_dir=conf.tensorboard_save_folder,
     histogram_freq=0,
     write_graph=True,
     write_images=False,
@@ -52,7 +52,7 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(
 
 fourcc = cv2.VideoWriter_fourcc(*"XVID")
 out = cv2.VideoWriter(
-    os.path.join(base_folder, "files_2", "inference_video.avi"),
+    os.path.join(conf.base_folder, "files_2", "inference_video.avi"),
     fourcc,
     30.0,
     (800, 600),
@@ -61,17 +61,17 @@ out = cv2.VideoWriter(
 
 def _trainer(network, train_generator, val_generator):
     network.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
-    network.save_weights(checkpoint_path.format(epoch=0))
+    network.save_weights(conf.checkpoint_path.format(epoch=0))
     history = network.fit(
         train_generator,
-        epochs=epochs,
-        steps_per_epoch=len(os.listdir(train2_folder)) // batch_size,
+        epochs=conf.epochs,
+        steps_per_epoch=len(os.listdir(conf.train2_folder)) // conf.batch_size,
         validation_data=val_generator,
         validation_steps=1,
         callbacks=[cp_callback, tensorboard_callback],
     )
     with open(
-        os.path.join(base_folder, "files_2", model_name, "training_logs.json"), "w"
+        os.path.join(conf.base_folder, "files_2", conf.model_name, "training_logs.json"), "w"
     ) as w:
         json.dump(history.history, w)
 
@@ -85,14 +85,14 @@ def inference(network, video_file):
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            _frame = cv2.resize(frame, (width, height))
+            _frame = cv2.resize(frame, (conf.width, conf.height))
             image_seq.append(_frame)
             if counter % 2 == 0:
                 if len(image_seq) == 8:
                     print(np.shape(image_seq))
                     np_image_seqs = np.reshape(
                         np.array(image_seq) / 255,
-                        (1, time, height, width, color_channels),
+                        (1, conf.time, conf.height, conf.width, conf.color_channels),
                     )
                     r = network.predict(np_image_seqs)
                     print(r)
@@ -123,26 +123,26 @@ def inference(network, video_file):
 
 if __name__ == "__main__":
     model_tools = build_tools()
-    network = model_tools.create_network(model_name)
+    network = model_tools.create_network(conf.model_name)
 
-    if mode == "train":
-        train_generator = data_tools(train2_folder, "train")
-        valid_generator = data_tools(valid2_folder, "valid")
+    if conf.mode == "train":
+        train_generator = utils.data_tools(conf.train2_folder, "train")
+        valid_generator = utils.data_tools(conf.valid2_folder, "valid")
         _trainer(
             network, train_generator.batch_dispatch(), valid_generator.batch_dispatch()
         )
 
-    elif mode == "test_video":
-        network.load_weights(os.path.join(model_save_folder, "model_weights_024.ckpt"))
-        inference(network, os.path.join(base_folder, "files_2", "input_video.mp4"))
+    elif conf.mode == "test_video":
+        network.load_weights(os.path.join(conf.model_save_folder, "model_weights_024.ckpt"))
+        inference(network, os.path.join(conf.base_folder, "files_2", "input_video.mp4"))
     
     else:
-        p = os.path.join(train2_folder, '96-collision.npz')
+        p = os.path.join(conf.train2_folder, '96-collision.npz')
         np_data = np.load(p, "r")
         imgs = np_data['images']
         np_image_seqs = np.reshape(
                         np.array(imgs[0]) / 255,
-                        (1, time, height, width, color_channels),
+                        (1, conf.time, conf.height, conf.width, conf.color_channels),
                     )
         r = network.predict(np_image_seqs)
         print (np.argmax(r, 1))

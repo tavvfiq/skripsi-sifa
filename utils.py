@@ -1,6 +1,6 @@
 import os
 import random
-from config import *
+import config as conf
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 train_folder = os.path.join("datasets", "train_set")
 test_folder = os.path.join("datasets_2", "test")
 valid_folder = os.path.join("datasets_2", "valid")
-one_hot_labels = np.eye(n_classes, dtype="uint8")
+one_hot_labels = np.eye(conf.n_classes, dtype="uint8")
 
 
 class data_tools:
@@ -17,7 +17,7 @@ class data_tools:
         self.data_folder = data_folder
         self._data = os.listdir(self.data_folder)
         if split_name == "train":
-            self.it = int(batch_size / 8)
+            self.it = int(conf.batch_size / 8)
         else:
             self.it = int(32 / 8)
 
@@ -25,7 +25,7 @@ class data_tools:
         counter = 0
         random.shuffle(self._data)
         while counter <= len(self._data):
-            image_seqs = np.empty((0, time, height, width, color_channels))
+            image_seqs = np.empty((0, conf.time, conf.height, conf.width, conf.color_channels))
             labels = np.empty((0, 2))
             for i in range(self.it):
                 npz_path = os.path.join(self.data_folder, self._data[counter])

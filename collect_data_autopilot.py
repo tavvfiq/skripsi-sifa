@@ -6,19 +6,19 @@ import cv2
 #settings
 IM_W,IM_H = (210,140)
 time_step = 0.1
-image_save_path = r'/mnt/d/Skripsi_Sifa/SourceCode/data_autopilot'
+image_save_path = r'/mnt/d/Skripsi_Sifa/SourceCode/data_autopilot' #change this
 seq_len = 8
 number_env_vehicles = 35
-
+# how much sequences we want to get?
+num_of_seq = 1000
 #create main carla objects
-client = carla.Client('192.168.0.7',2000)
+client = carla.Client('192.168.0.7',2000) #change thhis
 client.set_timeout(20)
 world = client.load_world('Town05')
 
 blueprint_library = world.get_blueprint_library()
 
 class Carla_session:
-
     def __init__(self):
         self.actors = []
         self.vehicle = []
@@ -35,9 +35,6 @@ class Carla_session:
         env_vehicles_bp = [x for x in env_vehicles_bp if not x.id.endswith('isetta')]
         env_vehicles_bp = [x for x in env_vehicles_bp if not x.id.endswith('carlacola')] 
         spawn_points = world.get_map().get_spawn_points()      
-        SpawnActor = carla.command.SpawnActor
-        SetAutopilot = carla.command.SetAutopilot
-        FutureActor = carla.command.FutureActor
         self.env_actors = []
         for n, transform in enumerate(spawn_points):
             if n >= number_env_vehicles:
@@ -55,11 +52,9 @@ class Carla_session:
         #set vehicle
         vehicle_bp = blueprint_library.find('vehicle.ford.mustang')
         self.vehicle = world.spawn_actor(vehicle_bp,start_point)
-        # self.vehicle.set_autopilot(True)
 
         #get and set sensors
         collision_sensor_bp = blueprint_library.find('sensor.other.collision')
-        lane_invasion_sensor_bp = blueprint_library.find('sensor.other.lane_invasion')
         camera_sensor_bp = blueprint_library.find('sensor.camera.rgb')
         camera_sensor_bp.set_attribute('image_size_x',str(IM_W))
         camera_sensor_bp.set_attribute('image_size_y',str(IM_H))
@@ -69,12 +64,9 @@ class Carla_session:
         sensor_location = carla.Transform(carla.Location(x=0,y=0,z=1.5))
         self.camera = world.spawn_actor(camera_sensor_bp, sensor_location, attach_to = self.vehicle)
         self.collision_sensor = world.spawn_actor(collision_sensor_bp, sensor_location, attach_to = self.vehicle)
-        # self.lane_invasion_sensor = world.spawn_actor(lane_invasion_sensor_bp, sensor_location, attach_to = self.vehicle)
         self.actors.extend([self.vehicle,self.camera])
         self.camera.listen(lambda image: self.add_image(image))
         self.collision_sensor.listen(lambda collision: self.end_seq(collision,'collision'))  
-
-        # self.lane_invasion_sensor.listen(lambda lane_inv: self.end_seq(lane_inv,'crossed lane'))
 
     def start_new_seq(self):
         
@@ -153,24 +145,7 @@ class Carla_session:
             print(error)
             pass
         self.destroy_actors()
-        '''
-        for i in range(episodes):
-            try:
-                self.start_new_seq()
-                for j in range(200):
-                    self.vehicle.apply_control(self.get_directions())
-                    time.sleep(1)
-                    if self.collision_flag == True:
-                        break
-                    
-            except Exception as e:
-                print(e)
-                continue'''
-
-        '''for i in self.env_actors:
-            i.destory()
-        self.env_actors =[]'''
 
 
 c = Carla_session()
-c.drive_around(1000)
+c.drive_around(num_of_seq)
